@@ -42,6 +42,7 @@ import org.eclipse.che.api.user.server.spi.PreferenceDao;
 import org.eclipse.che.api.user.server.spi.ProfileDao;
 import org.eclipse.che.api.user.server.spi.UserDao;
 import org.eclipse.che.api.workspace.server.WorkspaceConfigJsonAdapter;
+import org.eclipse.che.api.workspace.server.WorkspaceManager;
 import org.eclipse.che.api.workspace.server.jpa.WorkspaceJpaModule;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceImpl;
 import org.eclipse.che.api.workspace.server.model.impl.stack.StackImpl;
@@ -49,6 +50,7 @@ import org.eclipse.che.api.workspace.server.spi.StackDao;
 import org.eclipse.che.api.workspace.server.spi.WorkspaceDao;
 import org.eclipse.che.api.workspace.server.stack.StackJsonAdapter;
 import org.eclipse.che.commons.lang.IoUtil;
+import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -113,6 +115,7 @@ public class LocalToJpaDataMigratorTest {
                 install(new WorkspaceJpaModule());
                 install(new MachineJpaModule());
                 bind(StackJsonAdapter.class);
+                bind(WorkspaceManager.class).toInstance(Mockito.mock(WorkspaceManager.class));
             }
         });
 
