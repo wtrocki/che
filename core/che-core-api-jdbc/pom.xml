@@ -30,6 +30,11 @@
             <artifactId>guice-persist</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>4.0.3</version>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.che.core</groupId>
             <artifactId>che-core-api-core</artifactId>
         </dependency>

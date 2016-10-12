@@ -13,6 +13,7 @@ package org.eclipse.che.api.core.h2.jdbc.jpa.guice;
 import com.google.inject.persist.PersistService;
 
 import org.eclipse.che.api.core.jdbc.jpa.guice.JpaInitializer;
+import org.eclipse.che.api.core.jdbc.schema.SchemaInitializer;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -33,8 +34,8 @@ public class CheJpaInitializer extends JpaInitializer {
 
     @Inject
     @Override
-    public void init(PersistService persistService) {
+    public void init(PersistService persistService, SchemaInitializer schemaInitializer) {
         System.setProperty("h2.baseDir", Paths.get(storageRoot).resolve("db").toString());
-        super.init(persistService);
+        super.init(persistService, schemaInitializer);
     }
 }

@@ -14,6 +14,9 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.persist.PersistService;
 
+import org.eclipse.che.api.core.jdbc.schema.SchemaInitializationException;
+import org.eclipse.che.api.core.jdbc.schema.SchemaInitializer;
+
 /**
  * Should be bound as eager singleton.
  * See <a href="https://github.com/google/guice/wiki/JPA">doc</a>
@@ -25,7 +28,12 @@ import com.google.inject.persist.PersistService;
 public class JpaInitializer {
 
     @Inject
-    public void init(PersistService persistService) {
+    public void init(PersistService persistService, SchemaInitializer schemaInitializer) {
+        try {
+            schemaInitializer.initialize();
+        } catch (SchemaInitializationException x) {
+            throw new RuntimeException(x.getMessage(), x);
+        }
         persistService.start();
     }
 }
