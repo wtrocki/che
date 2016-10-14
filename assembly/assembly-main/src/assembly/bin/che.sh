@@ -412,6 +412,4 @@ execute_che () {
 }
 
 # Run the finish function if exit signal initiated
-trap "CHE_SERVER_ACTION=stop; execute_che;" SIGHUP SIGINT SIGTERM
-
 execute_che "$@"

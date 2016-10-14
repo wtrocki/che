@@ -46,11 +46,6 @@ RUN echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/reposit
     rm -rf /tmp/* /var/cache/apk/*
 
 EXPOSE 8000 8080
-
 USER user
-
 ADD assembly/assembly-main/target/eclipse-che-*/eclipse-che-* /home/user/che/
-
-ENTRYPOINT [ "/home/user/che/bin/che.sh" ]
-
-CMD [ "run" ]
+ENTRYPOINT ["/home/user/che/bin/start.sh"]
