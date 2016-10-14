@@ -9,7 +9,7 @@
 # Contributors:
 #   Codenvy, S.A. - initial API and implementation
 #
-# See: https://sipb.mit.edu/doc/safe-shell/
+
 set -e
 set +o posix
 
@@ -80,8 +80,6 @@ Variables:
 
   # Sets value of operating system
   HOST="linux"
-  GLOBAL_HOST_ARCH=$(docker version --format {{.Client}} | cut -d" " -f5)
-
 }
 
 usage () {
@@ -234,16 +232,8 @@ check_docker() {
   fi
 }
 
-has_docker_for_windows_client(){
-  if [ "${GLOBAL_HOST_ARCH}" = "windows" ]; then
-    return 0
-  else
-    return 1
-  fi
-}
-
 docker_exec() {
-  if has_docker_for_windows_client; then
+  if [ "${HOST}" == "windows" ]; then
     MSYS_NO_PATHCONV=1 docker.exe "$@"
   else
     "$(which docker)" "$@"
