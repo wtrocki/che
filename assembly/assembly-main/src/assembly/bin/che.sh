@@ -76,7 +76,6 @@ Variables:
 
   DEFAULT_CHE_SKIP_DOCKER_UID_ENFORCEMENT=false
   CHE_SKIP_DOCKER_UID_ENFORCEMENT=${CHE_SKIP_DOCKER_UID_ENFORCEMENT:-${DEFAULT_CHE_SKIP_DOCKER_UID_ENFORCEMENT}}
-  #### TODO: Use docker codenvy/che-ip to determine the right IP?
 
   # Sets value of operating system
   HOST="linux"
