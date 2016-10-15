@@ -279,21 +279,11 @@ get_docker_ready () {
   # Copies Che ws-agent and terminal to directory mounted by ws containers.
   # The directory has to be on the host, not inside the container.
   # The files are copied from within the container to a folder host-mounted.
-  if [ "${CHE_IN_CONTAINER}" == "true" ]; then
+#  if [ "${CHE_IN_CONTAINER}" == "true" ]; then
 
     # Make sure the user named "user" is the owner of the CHE_HOME directory.
     # Make sure the user named "user" is the owner of the CHE_DATA directory.
-    sudo chown -R user:user ${CHE_HOME}
-    sudo chown -R user:user ${CHE_DATA}
-
-    # Move files from /lib to /lib-copy.  This puts files onto the host.
-    rm -rf ${CHE_DATA}/lib/*
-    mkdir -p ${CHE_DATA}/lib
-    cp -rf ${CHE_HOME}/lib/* ${CHE_DATA}/lib
-
-    # A che property, which names the Docker network used for che + ws to communicate
-    export JAVA_OPTS="${JAVA_OPTS} -Dche.docker.che_host_network=bridge"
-  fi 
+#  fi 
 }
 
 docker_exec() {
