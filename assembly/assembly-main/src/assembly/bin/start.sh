@@ -54,27 +54,45 @@ init() {
   fi
 
   DEFAULT_CHE_HOME="/home/user/che"
-  CHE_HOME=${CHE_LOCAL_BINARY:-${DEFAULT_CHE_HOME}}
+  export CHE_HOME=${CHE_ASSEMBLY:-${DEFAULT_CHE_HOME}}
 
   if [ ! -f $CHE_HOME/bin/che.sh ]; then
     echo "!!!"
     echo "!!! Error: Could not find $CHE_HOME/bin/che.sh."
-    echo "!!! Error: Did you use CHE_LOCAL_BINARY with a typo?"
+    echo "!!! Error: Did you use CHE_ASSEMBLY with a typo?"
     echo "!!!"
     exit 1
   fi
 
-  DEFAULT_CHE_CONF_DIR="${CHE_HOME}/conf"
-  CHE_LOCAL_CONF_DIR=${CHE_LOCAL_CONF_DIR:-${DEFAULT_CHE_CONF_DIR}}
+  DEFAULT_CHE_DATA="/data"
+  export CHE_DATA=${CHE_DATA:-${DEFAULT_CHE_DATA}}
+  CHE_DATA_HOST=$(get_che_data_from_host)
+
+  DEFAULT_CHE_CONF_DIR="${CHE_DATA}/conf"
+  export CHE_LOCAL_CONF_DIR=${CHE_LOCAL_CONF_DIR:-${DEFAULT_CHE_CONF_DIR}}
 
   if [ ! -f $CHE_LOCAL_CONF_DIR/che.properties ]; then
-    echo "!!!"
-    echo "!!! Error: Could not find $CHE_LOCAL_CONF_DIR/che.properties."
-    echo "!!! Error: Did you use CHE_LOCAL_CONF_DIR with a typo?"
-    echo "!!!"
-    exit 1
+    echo "WARN: Could not find $CHE_LOCAL_CONF_DIR/che.properties. Using embedded system properties."
+    CHE_LOCAL_CONF_DIR=${CHE_HOME}/conf
   fi
+
+  # Update che.properties with sed command
+  sed -i '/che.workspace.storage/c\che.workspace.storage=/data/workspaces' $CHE_LOCAL_CONF_DIR/che.properties
+  sed -i '/che.conf.storage/c\che.conf.storage=/data/storage' $CHE_LOCAL_CONF_DIR/che.properties
+  sed -i "/machine.server.ext.archive/c\machine.server.ext.archive=${CHE_DATA_HOST}/lib/ws-agent.tar.gz" $CHE_LOCAL_CONF_DIR/che.properties
+  sed -i "/machine.server.terminal.path_to_archive.linux_amd64/c\machine.server.terminal.path_to_archive.linux_amd64=${CHE_DATA_HOST}/lib/linux_amd64/terminal" $CHE_LOCAL_CONF_DIR/che.properties
+  sed -i "/machine.server.terminal.path_to_archive.linux_arm7/c\machine.server.terminal.path_to_archive.linux_arm7=${CHE_DATA_HOST}/lib/linux_arm7/terminal" $CHE_LOCAL_CONF_DIR/che.properties
 }
+
+get_che_data_from_host() {
+  CHE_SERVER_CONTAINER_ID=$(get_che_server_container_id)
+  echo $(docker inspect --format='{{(index .Volumes "/data")}}' $CHE_SERVER_CONTAINER_ID)
+}
+
+get_che_server_container_id() {
+  hostname
+}
+
 
 get_docker_host_ip() {
   case $(get_docker_install_type) in
@@ -150,7 +168,7 @@ has_external_hostname() {
   fi
 }
 
-# SIGUSR1-handler
+# SITTERM / SIGINT
 responsible_shutdown() {
   "${CHE_HOME}"/bin/che.sh stop
 }

@@ -13,13 +13,58 @@
 set -e
 set +o posix
 
+check_docker() {
+  if ! has_docker; then
+    error "Docker not found. Get it at https://docs.docker.com/engine/installation/."
+    return 1;
+  fi
+
+  if ! docker ps > /dev/null 2>&1; then
+    output=$(docker ps)
+    error "Docker not installed properly: \n${output}"
+    echo "Check: Does /var/run/docker.sock have r/w permissions?"
+    echo "Check: Does your Docker client & version match?"
+    DOCKER_PERMS=$(stat -c %A /var/run/docker.sock)
+    DOCKER_SERVER_VERSION=$(docker version --format '{{.Server.Version}}') 
+    DOCKER_CLIENT_VERSION=$(docker version --format '{{.Client.Version}}')
+    echo "Docker /var/run/docker.sock Permissions: $DOCKER_PERMS"
+    echo "Docker Server: $DOCKER_SERVER_VERSION"
+    echo "Docker Client: $DOCKER_CLIENT_VERSION"
+    return 1;
+  fi
+}
+
+has_docker() {
+  hash docker 2>/dev/null && return 0 || return 1
+}
+
+determine_os () {
+  # Set OS.  Mac & Windows require VirtualBox and docker-machine.
+  case "${OSTYPE}" in
+     linux*|freebsd*)
+       HOST="linux" 
+     ;;
+     darwin*)
+       HOST="mac" 
+     ;;
+     cygwin|msys|win32)
+       HOST="windows" 
+     ;;
+     *)
+       # unknown option
+       error "We could not detect your operating system. Che is unlikely to work properly."
+       return 1
+     ;;
+  esac
+}
+
 init_global_variables () {
   # For coloring console output
   BLUE='\033[1;34m'
   GREEN='\033[0;32m'
   NC='\033[0m'
 
-  NEW_USAGE="
+  USAGE="
 Usage:
   che [COMMAND]
      start                              Starts server with output in the background
@@ -77,20 +122,33 @@ Variables:
   DEFAULT_CHE_SKIP_DOCKER_UID_ENFORCEMENT=false
   CHE_SKIP_DOCKER_UID_ENFORCEMENT=${CHE_SKIP_DOCKER_UID_ENFORCEMENT:-${DEFAULT_CHE_SKIP_DOCKER_UID_ENFORCEMENT}}
 
-  # Sets value of operating system
-  HOST="linux"
+  DEFAULT_CHE_HOME=$(get_default_che_home)
+  export CHE_HOME=${CHE_HOME:-${DEFAULT_CHE_HOME}}
+
+  DEFAULT_CHE_DATA=$(get_default_che_data)
+  export CHE_DATA=${CHE_DATA:-${DEFAULT_CHE_DATA}}
 }
 
-usage () {
-  echo "${NEW_USAGE}"
+get_default_che_home () {
+  # The base directory of Che
+  if [ -z "${CHE_HOME}" ]; then
+    if [ "${HOST}" == "windows" ]; then
+      # che-497: Determine windows short directory name in bash
+      echo `(cd "$( dirname "${BASH_SOURCE[0]}" )" && \
+                      cmd //C 'FOR %i in (..) do @echo %~Si')`
+    else
+      echo "$(dirname "$(cd "$(dirname "${0}")" && pwd -P)")"
+    fi
+  else
+    echo "/home/user/che"
+  fi
 }
 
-error () {
-  echo
-  echo "!!!"
-  echo -e "!!! ${1}"
-  echo "!!!"
-  return 0
+get_default_che_data () {
+  # The base directory of Che
+  if [ -z "${CHE_DATA}" ]; then
+    echo "/data"
+  fi
 }
 
 parse_command_line () {
@@ -116,38 +174,20 @@ parse_command_line () {
   esac
 }
 
-determine_os () {
-  # Set OS.  Mac & Windows require VirtualBox and docker-machine.
-  case "${OSTYPE}" in
-     linux*|freebsd*)
-       HOST="linux" 
-     ;;
-     darwin*)
-       HOST="mac" 
-     ;;
-     cygwin|msys|win32)
-       HOST="windows" 
-     ;;
-     *)
-       # unknown option
-       error "We could not detect your operating system. Che is unlikely to work properly."
-       return 1
-     ;;
-  esac
+error () {
+  echo
+  echo "!!!"
+  echo -e "!!! ${1}"
+  echo "!!!"
+  return 0
+}
+
+usage () {
+  echo "${USAGE}"
 }
 
 set_environment_variables () {
   ### Set value of derived environment variables.
-  # The base directory of Che
-  if [ -z "${CHE_HOME}" ]; then
-    if [ "${HOST}" == "windows" ]; then
-      # che-497: Determine windows short directory name in bash
-      export CHE_HOME=`(cd "$( dirname "${BASH_SOURCE[0]}" )" && \
-                      cmd //C 'FOR %i in (..) do @echo %~Si')`
-    else
-      export CHE_HOME="$(dirname "$(cd "$(dirname "${0}")" && pwd -P)")"
-    fi
-  fi
 
   # CHE_DOCKER_MACHINE_HOST is used internally by Che to set its IP address
   if [[ -n "${CHE_IP}" ]]; then
@@ -192,51 +232,18 @@ set_environment_variables () {
 
   # Sets the location of the application server and its executables
   # Internal property - should generally not be overridden
-  export CATALINA_HOME="${CHE_HOME}"/tomcat
+  export CATALINA_HOME="${CHE_HOME}/tomcat"
 
   # Convert windows path name to POSIX
   if [[ "${CATALINA_HOME}" == *":"* ]]; then
     CATALINA_HOME=$(echo /"${CATALINA_HOME}" | sed  's|\\|/|g' | sed 's|:||g')
   fi
 
-  # Internal property - should generally not be overridden
-  export CATALINA_BASE="${CHE_HOME}"/tomcat
-  export ASSEMBLY_BIN_DIR="${CATALINA_HOME}"/bin
+  # Internal properties - should generally not be overridden
+  export CATALINA_BASE="${CHE_HOME}/tomcat"
+  export ASSEMBLY_BIN_DIR="${CATALINA_HOME}/bin"
   export CHE_LOGS_LEVEL="${CHE_LOG_LEVEL}"
   export CHE_LOGS_DIR="${CATALINA_HOME}/logs/"
-}
-
-has_docker() {
-  hash docker 2>/dev/null && return 0 || return 1
-}
-
-check_docker() {
-  if ! has_docker; then
-    error "Docker not found. Get it at https://docs.docker.com/engine/installation/."
-    return 1;
-  fi
-
-  if ! docker ps > /dev/null 2>&1; then
-    output=$(docker ps)
-    error "Docker not installed properly: \n${output}"
-    echo "Check: Does /var/run/docker.sock have r/w permissions?"
-    echo "Check: Does your Docker client & version match?"
-    DOCKER_PERMS=$(stat -c %A /var/run/docker.sock)
-    DOCKER_SERVER_VERSION=$(docker version --format '{{.Server.Version}}') 
-    DOCKER_CLIENT_VERSION=$(docker version --format '{{.Client.Version}}')
-    echo "Docker /var/run/docker.sock Permissions: $DOCKER_PERMS"
-    echo "Docker Server: $DOCKER_SERVER_VERSION"
-    echo "Docker Client: $DOCKER_CLIENT_VERSION"
-    return 1;
-  fi
-}
-
-docker_exec() {
-  if [ "${HOST}" == "windows" ]; then
-    MSYS_NO_PATHCONV=1 docker.exe "$@"
-  else
-    "$(which docker)" "$@"
-  fi
 }
 
 get_docker_ready () {
@@ -275,16 +282,43 @@ get_docker_ready () {
   if [ "${CHE_IN_CONTAINER}" == "true" ]; then
 
     # Make sure the user named "user" is the owner of the CHE_HOME directory.
+    # Make sure the user named "user" is the owner of the CHE_DATA directory.
     sudo chown -R user:user ${CHE_HOME}
+    sudo chown -R user:user ${CHE_DATA}
 
     # Move files from /lib to /lib-copy.  This puts files onto the host.
-    rm -rf ${CHE_HOME}/lib-copy/*
-    mkdir -p ${CHE_HOME}/lib-copy
-    cp -rf ${CHE_HOME}/lib/* ${CHE_HOME}/lib-copy
+    rm -rf ${CHE_DATA}/lib/*
+    mkdir -p ${CHE_DATA}/lib
+    cp -rf ${CHE_HOME}/lib/* ${CHE_DATA}/lib
 
     # A che property, which names the Docker network used for che + ws to communicate
     export JAVA_OPTS="${JAVA_OPTS} -Dche.docker.che_host_network=bridge"
   fi 
+}
+
+docker_exec() {
+  if [ "${HOST}" == "windows" ]; then
+    MSYS_NO_PATHCONV=1 docker.exe "$@"
+  else
+    "$(which docker)" "$@"
+  fi
+}
+
+start_che_server () {
+  if ${CHE_LAUNCH_DOCKER_REGISTRY} ; then
+    # Export the value of host here
+    launch_docker_registry
+  fi
+
+  #########################################
+  # Launch Che natively as a tomcat server
+  call_catalina
+}
+
+stop_che_server () {
+  echo -e "Stopping Che server running on localhost:${CHE_PORT}"
+  call_catalina >/dev/null 2>&1
+  return 1;
 }
 
 call_catalina () {
@@ -340,12 +374,6 @@ call_catalina () {
   fi
 }
 
-stop_che_server () {
-  echo -e "Stopping Che server running on localhost:${CHE_PORT}"
-  call_catalina >/dev/null 2>&1
-  return 1;
-}
-
 kill_and_launch_docker_registry () {
   echo -e "Launching Docker container named ${GREEN}registry${NC} from image ${GREEN}registry:2${NC}."
   docker_exec rm -f registry &> /dev/null || true
@@ -384,22 +412,11 @@ launch_docker_registry () {
     fi
 }
 
-start_che_server () {
-  if ${CHE_LAUNCH_DOCKER_REGISTRY} ; then
-    # Export the value of host here
-    launch_docker_registry
-  fi
-
-  #########################################
-  # Launch Che natively as a tomcat server
-  call_catalina
-}
-
 execute_che () { 
   check_docker
+  determine_os
   init_global_variables
   parse_command_line "$@"
-  determine_os
   set_environment_variables
   get_docker_ready
 
