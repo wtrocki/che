@@ -47,11 +47,32 @@ init() {
   export CHE_SKIP_DOCKER_UID_ENFORCEMENT="true"
  
   HOSTNAME=$(get_docker_external_hostname)
-  echo $HOSTNAME
   if has_external_hostname; then
-  	# Internal property used by Che to set hostname.
-  	# See: LocalDockerInstanceRuntimeInfo.java#L9
-  	export CHE_DOCKER_MACHINE_HOST_EXTERNAL=${HOSTNAME}
+    # Internal property used by Che to set hostname.
+    # See: LocalDockerInstanceRuntimeInfo.java#L9
+    export CHE_DOCKER_MACHINE_HOST_EXTERNAL=${HOSTNAME}
+  fi
+
+  DEFAULT_CHE_HOME="/home/user/che"
+  CHE_HOME=${CHE_LOCAL_BINARY:-${DEFAULT_CHE_HOME}}
+
+  if [ ! -f $CHE_HOME/bin/che.sh ]; then
+    echo "!!!"
+    echo "!!! Error: Could not find $CHE_HOME/bin/che.sh."
+    echo "!!! Error: Did you use CHE_LOCAL_BINARY with a typo?"
+    echo "!!!"
+    exit 1
+  fi
+
+  DEFAULT_CHE_CONF_DIR="${CHE_HOME}/conf"
+  CHE_LOCAL_CONF_DIR=${CHE_LOCAL_CONF_DIR:-${DEFAULT_CHE_CONF_DIR}}
+
+  if [ ! -f $CHE_LOCAL_CONF_DIR/che.properties ]; then
+    echo "!!!"
+    echo "!!! Error: Could not find $CHE_LOCAL_CONF_DIR/che.properties."
+    echo "!!! Error: Did you use CHE_LOCAL_CONF_DIR with a typo?"
+    echo "!!!"
+    exit 1
   fi
 }
 
@@ -131,7 +152,7 @@ has_external_hostname() {
 
 # SIGUSR1-handler
 responsible_shutdown() {
-  /home/user/che/bin/che.sh stop
+  "${CHE_HOME}"/bin/che.sh stop
 }
 
 # setup handlers
@@ -142,7 +163,7 @@ check_docker
 init
 
 # run application
-/home/user/che/bin/che.sh run &
+"${CHE_HOME}"/bin/che.sh run &
 PID=$!
 
 # See: http://veithen.github.io/2014/11/16/sigterm-propagation.html
