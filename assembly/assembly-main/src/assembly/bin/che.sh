@@ -39,7 +39,6 @@ has_docker() {
 }
 
 determine_os () {
-  # Set OS.  Mac & Windows require VirtualBox and docker-machine.
   case "${OSTYPE}" in
      linux*|freebsd*)
        HOST="linux" 
