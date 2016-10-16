@@ -83,7 +83,6 @@ Variables:
     CHE_LOG_LEVEL                       [INFO | DEBUG] Sets the output level of Tomcat messages
     CHE_DEBUG_SERVER                    If true, activates Tomcat's JPDA debugging mode
     CHE_SKIP_JAVA_VERSION_CHECK         If true, skips the pre-flight check for a valid JAVA_HOME
-    CHE_SKIP_DOCKER_UID_ENFORCEMENT     If true, skips the pre-flight check for current user with UID=1000 for Docker 
     CHE_HOME                            Where the Che assembly resides - self-determining if not set
 "
 
@@ -118,9 +117,6 @@ Variables:
 
   DEFAULT_CHE_SKIP_JAVA_VERSION_CHECK=false
   CHE_SKIP_JAVA_VERSION_CHECK=${CHE_SKIP_JAVA_VERSION_CHECK:-${DEFAULT_CHE_SKIP_JAVA_VERSION_CHECK}}
-
-  DEFAULT_CHE_SKIP_DOCKER_UID_ENFORCEMENT=false
-  CHE_SKIP_DOCKER_UID_ENFORCEMENT=${CHE_SKIP_DOCKER_UID_ENFORCEMENT:-${DEFAULT_CHE_SKIP_DOCKER_UID_ENFORCEMENT}}
 
   DEFAULT_CHE_HOME=$(get_default_che_home)
   export CHE_HOME=${CHE_HOME:-${DEFAULT_CHE_HOME}}
@@ -247,43 +243,11 @@ set_environment_variables () {
 }
 
 get_docker_ready () {
-  # Test to ensure user is in Docker group with appropriate permissions
-  if [ "${HOST}" == "linux" ]; then
-
-    LINUX_USER=$(whoami)
-    LINUX_GROUPS=$(groups "${LINUX_USER}")
-    LINUX_UID=$(id -u "${LINUX_USER}")
-
-    if [[ "${CHE_SKIP_DOCKER_UID_ENFORCEMENT}" == "false" ]] ; then
-      if echo "${LINUX_GROUPS}" | grep "docker" &>/dev/null; then
-        if [[ "${LINUX_UID}" != "1000" ]] ; then
-          error "This Linux user was launched with a UID != 1000. `
-                `Che must run under UID 1000. See https://eclipse-che.readme.io/docs/usage#section-cannot-create-projects"
-                return 1;
-        fi
-      else
-        error "This Linux user is not in 'docker' group. `
-              `See https://docs.docker.com/engine/installation/ubuntulinux/#create-a-docker-group"
-      fi
-    fi
-  fi
-
   if [ "${HOST}" == "windows" ]; then
     if [ -z ${DOCKER_HOST+x} ]; then
       export DOCKER_HOST=tcp://localhost:2375
     fi
   fi
-
-  # Hidden parameter
-  # Only used if this script is starting a Che Tomcat from inside a Docker container.
-  # Copies Che ws-agent and terminal to directory mounted by ws containers.
-  # The directory has to be on the host, not inside the container.
-  # The files are copied from within the container to a folder host-mounted.
-#  if [ "${CHE_IN_CONTAINER}" == "true" ]; then
-
-    # Make sure the user named "user" is the owner of the CHE_HOME directory.
-    # Make sure the user named "user" is the owner of the CHE_DATA directory.
-#  fi 
 }
 
 docker_exec() {

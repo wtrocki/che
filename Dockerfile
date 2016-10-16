@@ -48,4 +48,4 @@ RUN echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/reposit
 EXPOSE 8000 8080
 USER user
 ADD assembly/assembly-main/target/eclipse-che-*/eclipse-che-* /home/user/che/
-ENTRYPOINT ["/home/user/che/bin/start.sh"]
+ENTRYPOINT ["/home/user/che/bin/docker.sh"]
