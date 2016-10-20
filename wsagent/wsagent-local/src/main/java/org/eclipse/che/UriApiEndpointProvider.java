@@ -20,7 +20,7 @@ import java.net.URI;
  */
 public class UriApiEndpointProvider implements Provider<URI> {
 
-    public static final String API_ENDPOINT_URL_VARIABLE = "CHE_CHE_API";
+    public static final String API_ENDPOINT_URL_VARIABLE = "CHE_API";
 
     @Override
     public URI get() {
