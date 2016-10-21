@@ -370,14 +370,14 @@ public class CheBootstrap extends EverrestGuiceContextListener {
                 bind(String.class).annotatedWith(Names.named(key)).toProvider(Providers.<String>of(null));
                 if (aliasesForName != null) {
                     for (String alias : aliasesForName) {
-                        bind(String.class).annotatedWith(Names.named(alias)).toProvider(Providers.<String>of(null));
+                        bind(String.class).annotatedWith(Names.named(prefix == null ? alias : prefix + alias)).toProvider(Providers.<String>of(null));
                     }
                 }
             } else {
                 bindConstant().annotatedWith(Names.named(key)).to(value);
                 if (aliasesForName != null) {
                     for (String alias : aliasesForName) {
-                        bindConstant().annotatedWith(Names.named(alias)).to(value);
+                        bindConstant().annotatedWith(Names.named(prefix == null ? alias : prefix + alias)).to(value);
                     }
                 }
             }
