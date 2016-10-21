@@ -10,10 +10,12 @@
  *******************************************************************************/
 package org.eclipse.che.plugin.gdb.server;
 
+import org.eclipse.che.api.debug.shared.model.Location;
 import org.eclipse.che.api.debugger.server.exceptions.DebuggerException;
 import org.eclipse.che.commons.annotation.Nullable;
 import org.eclipse.che.plugin.gdb.server.exception.GdbException;
 import org.eclipse.che.plugin.gdb.server.exception.GdbTerminatedException;
+import org.eclipse.che.plugin.gdb.server.parser.GdbBacktrace;
 import org.eclipse.che.plugin.gdb.server.parser.GdbBreak;
 import org.eclipse.che.plugin.gdb.server.parser.GdbClear;
 import org.eclipse.che.plugin.gdb.server.parser.GdbContinue;
@@ -38,6 +40,7 @@ import javax.validation.constraints.NotNull;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Map;
 
 /**
  * GDB.
@@ -79,6 +82,24 @@ public class Gdb extends GdbProcess {
     public GdbRun run() throws IOException, InterruptedException, DebuggerException {
         GdbOutput gdbOutput = sendCommand("run");
         return GdbRun.parse(gdbOutput);
+    }
+
+    public Location suspend() throws IOException, InterruptedException, DebuggerException {
+        if (pid < 0) {
+            throw new DebuggerException("Unable suspend debugger session. Process not found.");
+        }
+
+        Runtime.getRuntime().exec("kill -SIGINT " + pid).waitFor();
+        sendCommand("signal SIGSTOP ");
+
+        GdbOutput gdbOutput = sendCommand("backtrace");
+        GdbBacktrace backtrace = GdbBacktrace.parse(gdbOutput);
+        Map<Integer, Location> frames = backtrace.getFrames();
+
+        if (frames.containsKey(0)) {
+            return frames.get(0);
+        }
+        throw new DebuggerException("Unable recognize current location for debugger session. ");
     }
 
     /**
