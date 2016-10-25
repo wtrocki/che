@@ -382,7 +382,7 @@ public class ProcessesPanelPresenterTest {
         when(workspaceRuntime.getMachines()).thenReturn(machines);
         when(entityFactory.createMachine(machineDto)).thenReturn(machine);
 
-        presenter.rootNode = new ProcessTreeNode(ROOT_NODE, null, null, null, Collections.EMPTY_LIST);
+        presenter.rootNode = new ProcessTreeNode(ROOT_NODE, null, null, null, new ArrayList<ProcessTreeNode>());
 
         TerminalPresenter terminal = mock(TerminalPresenter.class);
         when(terminalFactory.create(machine)).thenReturn(terminal);
