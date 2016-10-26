@@ -117,8 +117,6 @@ public class WorkspaceEventsHandler {
     @VisibleForTesting
     WsAgentOutputSubscriptionHandler     wsAgentLogSubscriptionHandler;
 
-    private boolean workspaceEventsHandled;
-
     @Inject
     WorkspaceEventsHandler(final EventBus eventBus,
                             final CoreLocalizationConstant locale,
@@ -159,12 +157,6 @@ public class WorkspaceEventsHandler {
      *         callback which is necessary to notify that workspace component started or failed
      */
     void trackWorkspaceEvents(final WorkspaceDto workspace, final Callback<Component, Exception> callback) {
-        if (workspaceEventsHandled) {
-            return;
-        }
-
-        workspaceEventsHandled = true;
-
         this.workspaceComponent = wsComponentProvider.get();
         this.messageBus = messageBusProvider.getMessageBus();
         subscribeToWorkspaceStatusEvents(workspace);
@@ -393,6 +385,7 @@ public class WorkspaceEventsHandler {
                     break;
 
                 case ERROR:
+                    unSubscribeHandlers();
                     notificationManager.notify(locale.workspaceStartFailed(), FAIL, FLOAT_MODE);
                     loader.setError(LoaderPresenter.Phase.STARTING_WORKSPACE_RUNTIME);
                     final String workspaceName = workspace.getConfig().getName();
@@ -407,7 +400,14 @@ public class WorkspaceEventsHandler {
 
                 case STOPPED:
                     loader.setSuccess(LoaderPresenter.Phase.STOPPING_WORKSPACE);
-                    eventBus.fireEvent(new WorkspaceStoppedEvent(workspace));
+                    unSubscribeHandlers();
+
+                    try {
+                        eventBus.fireEvent(new WorkspaceStoppedEvent(workspace));
+                    } catch (Exception e) {
+                        Log.error(WorkspaceEventsHandler.class, e.getMessage(), e);
+                    }
+
                     startWorkspaceNotification.show(statusEvent.getWorkspaceId());
                     break;
 
