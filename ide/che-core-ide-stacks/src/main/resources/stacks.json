@@ -2030,7 +2030,7 @@
     "components": [
       {
         "name": "Python",
-        "version": "3.5.1"
+        "version": "2.7"
       },
       {
         "name": "pip",
@@ -2043,7 +2043,7 @@
     ],
     "source": {
       "type": "image",
-        "origin": "ksmster/pio:latest"
+        "origin": "code/pio:latest"
     },
     "workspaceConfig": {
       "environments": {
@@ -2060,7 +2060,7 @@
             }
           },
           "recipe": {
-            "location": "ksmster/pio:latest",
+            "location": "eclipse/platformio:latest",
             "type": "dockerimage"
           }
         }
@@ -2105,6 +2105,14 @@
           "name": "Remote: Upload",
           "type": "custom",
           "commandLine": "cd ${current.project.path} && pio remote run -t upload",
+          "attributes": {
+            "previewUrl": ""
+          }
+        },
+        {
+          "name": "Remote: Serial Port Monitor",
+          "type": "custom",
+          "commandLine": "pio remote device monitor",
           "attributes": {
             "previewUrl": ""
           }
